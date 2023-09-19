@@ -4,9 +4,9 @@ plugins {
   id("xyz.jpenilla.run-paper") version "2.1.0" // Adds runServer and runMojangMappedServer tasks for testing
 }
 
-group = "io.papermc.paperweight"
+group = "modist.smp2advancement"
 version = "1.0.0-SNAPSHOT"
-description = "Test plugin for paperweight-userdev"
+description = "Advancement Management for SMP2"
 
 java {
   // Configure the java toolchain. This allows gradle to auto-provision JDK 17 on systems that only have JDK 8 installed for example.

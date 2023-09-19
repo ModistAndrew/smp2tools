@@ -1,6 +1,6 @@
 name: $name
 version: $version
-main: io.papermc.paperweight.testplugin.TestPlugin
+main: modist.smp2advancement.Smp2Advancement
 description: $description
 load: STARTUP
 authors:
