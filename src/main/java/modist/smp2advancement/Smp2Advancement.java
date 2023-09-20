@@ -33,7 +33,7 @@ public final class Smp2Advancement extends JavaPlugin implements Listener {
       e.getAdvancement().getChildren().forEach(child -> e.getPlayer().getAdvancementProgress(child).awardCriteria("%parent%"));
       e.getAdvancement().getCriteria().stream()
         .filter(s -> s.startsWith("%execute%:"))
-        .map(s->s.substring(8).replace("%player%", e.getPlayer().getName()))
+        .map(s->s.substring(10).replace("%player%", e.getPlayer().getName()))
         .forEach(s ->
             getServer().dispatchCommand(getServer().getConsoleSender(), s));
   }
