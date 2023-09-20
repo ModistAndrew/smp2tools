@@ -35,6 +35,9 @@ public final class Smp2Advancement extends JavaPlugin implements Listener {
         .filter(s -> s.startsWith("%execute%:"))
         .map(s->s.substring(10).replace("%player%", e.getPlayer().getName()))
         .forEach(s ->
-            getServer().dispatchCommand(getServer().getConsoleSender(), s));
+        {
+          this.getLogger().info("Executing command: "+s);
+          getServer().dispatchCommand(getServer().getConsoleSender(), s);
+        });
   }
 }
