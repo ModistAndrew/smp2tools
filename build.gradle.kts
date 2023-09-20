@@ -6,7 +6,7 @@ plugins {
 
 group = "modist.smp2advancement"
 version = "1.0.0-SNAPSHOT"
-description = "Advancement Management for SMP2"
+description = "Advancement Management made for SMP2"
 
 java {
   // Configure the java toolchain. This allows gradle to auto-provision JDK 17 on systems that only have JDK 8 installed for example.

@@ -1,0 +1,2 @@
+ - Use %parent% as a criteria with impossible trigger to make parent advancement required.
+ - Use %execute%:[your command] as a criteria with tick trigger to execute the command when the advancement is made. You may use %player% to replace the player's name.
