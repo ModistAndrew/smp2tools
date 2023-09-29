@@ -1,6 +1,6 @@
 name: $name
 version: $version
-main: modist.smp2advancement.Smp2Advancement
+main: modist.smp2tools.Smp2Tools
 description: $description
 load: STARTUP
 authors:

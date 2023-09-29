@@ -4,9 +4,9 @@ plugins {
   id("xyz.jpenilla.run-paper") version "2.1.0" // Adds runServer and runMojangMappedServer tasks for testing
 }
 
-group = "modist.smp2advancement"
+group = "modist.smp2tools"
 version = "1.0.0-SNAPSHOT"
-description = "Advancement Management made for SMP2"
+description = "A tool plugin made for SMP2"
 
 java {
   // Configure the java toolchain. This allows gradle to auto-provision JDK 17 on systems that only have JDK 8 installed for example.
