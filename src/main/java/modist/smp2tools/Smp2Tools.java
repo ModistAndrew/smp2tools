@@ -13,11 +13,10 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraft.world.level.border.WorldBorder;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.NamespacedKey;
-import org.bukkit.Particle;
+import org.bukkit.*;
+import org.bukkit.block.Block;
 import org.bukkit.craftbukkit.v1_20_R1.CraftWorld;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -26,9 +25,12 @@ import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerAdvancementDoneEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.world.LootGenerateEvent;
+import org.bukkit.inventory.BlockInventoryHolder;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.DefaultQualifier;
 
 import javax.script.ScriptEngine;
@@ -46,10 +48,6 @@ public final class Smp2Tools extends JavaPlugin implements Listener {
 
   private NamespacedKey getKey(String key) {
     return new NamespacedKey(this, key);
-  }
-
-  private NamespacedKey getKey(ResourceLocation resourceLocation) {
-    return new NamespacedKey(resourceLocation.getNamespace(), resourceLocation.getPath());
   }
 
   public void info(String s, Object... args) {
@@ -94,51 +92,97 @@ public final class Smp2Tools extends JavaPlugin implements Listener {
   public void onOpenChest(PlayerInteractEvent e) {
     if (e.hasBlock()) {
       Location location = e.getClickedBlock().getLocation();
-      CraftWorld cw = (CraftWorld) location.getWorld();
-      BlockEntity be = cw.getHandle().getBlockEntity(getPos(location));
-      if (be instanceof RandomizableContainerBlockEntity randomizableContainerBlockEntity) {
-        ResourceLocation lootTable = randomizableContainerBlockEntity.lootTable;
-        if (lootTable != null && lootTableConfig.contains(lootTable.toString())) {
-          LootTableConfig.LootTableSettings settings = lootTableConfig.getSettings(lootTable.toString());
-          PdcUtil.map(e.getPlayer().getPersistentDataContainer(), getKey("loot_penalty"), PersistentDataType.TAG_CONTAINER,
-            e.getPlayer().getPersistentDataContainer().getAdapterContext().newPersistentDataContainer(),
-            pdc -> {
-              PdcUtil.map(pdc, getKey(lootTable), LootPenalty.LOOT_PENALTY, new LootPenalty(),
-                lp -> {
-                  if (!lp.update(settings::getCount)) {
-                    e.getPlayer().sendMessage(Component.text(settings.failInfo.replace("%count%", String.valueOf(lp.count))
-                      .replace("%level%", String.valueOf(lp.level))
-                      .replace("%loot_table%", lootTable.toString()), NamedTextColor.RED));
-                    teleport(cw, location, settings.range);
-                    e.setCancelled(true);
-                  } else {
-                    e.getPlayer().sendMessage(Component.text(settings.successInfo.replace("%count%", String.valueOf(lp.count))
-                      .replace("%level%", String.valueOf(lp.level))
-                      .replace("%loot_table%", lootTable.toString()), NamedTextColor.GREEN));
-                  }
-                  return lp;
-                });
-              return pdc;
-            });
-        }
+      ResourceLocation lootTable = getLootTable(location);
+      if (lootTable != null) {
+        LootTableConfig.LootTableSettings settings = lootTableConfig.getSettings(lootTable.toString());
+        PdcUtil.map(e.getPlayer().getPersistentDataContainer(), getKey("loot_penalty"), PersistentDataType.TAG_CONTAINER,
+          e.getPlayer().getPersistentDataContainer().getAdapterContext().newPersistentDataContainer(),
+          pdc -> {
+            PdcUtil.map(pdc, getKey(lootTable), LootPenalty.LOOT_PENALTY, new LootPenalty(),
+              lp -> {
+                if (!lp.update(settings::getCount)) {
+                  e.getPlayer().sendMessage(Component.text(settings.failInfo.replace("%count%", String.valueOf(lp.count))
+                    .replace("%level%", String.valueOf(lp.level))
+                    .replace("%loot_table%", lootTable.toString()), NamedTextColor.RED));
+                  teleport(location, settings.range);
+                  e.setCancelled(true);
+                } else {
+                  e.getPlayer().sendMessage(Component.text(settings.successInfo.replace("%count%", String.valueOf(lp.count))
+                    .replace("%level%", String.valueOf(lp.level))
+                    .replace("%loot_table%", lootTable.toString()), NamedTextColor.GREEN));
+                }
+                return lp;
+              });
+            return pdc;
+          });
       }
     }
   }
 
+  @Nullable
+  private ResourceLocation getLootTable(Location location) {
+    CraftWorld cw = (CraftWorld) location.getWorld();
+    BlockEntity be = cw.getHandle().getBlockEntity(getPos(location));
+    if (be instanceof RandomizableContainerBlockEntity randomizableContainerBlockEntity) {
+      ResourceLocation lootTable = randomizableContainerBlockEntity.lootTable;
+      if (lootTable != null && lootTableConfig.contains(lootTable.toString())) {
+        return lootTable;
+      }
+    }
+    return null;
+  }
+
   @EventHandler
   public void onExplosion(BlockExplodeEvent event) {
-    if(event.getBlock())
-
+    event.blockList().removeAll(event.blockList().stream().filter(b -> {
+      Location location = b.getLocation();
+      ResourceLocation lootTable = getLootTable(location);
+      if (lootTable != null) {
+        LootTableConfig.LootTableSettings settings = lootTableConfig.getSettings(lootTable.toString());
+        teleport(location, settings.range);
+        return true;
+      }
+      return false;
+    }).toList());
   }
 
   @EventHandler
-  public void onExplosion(EntityExplodeEvent event) {
-    event.blockList().stream().filter(b -> {
-
-    });
+  public void onLoot(LootGenerateEvent event) {
+    String lootTable = event.getLootTable().getKey().asString();
+    if(event.getInventoryHolder() instanceof BlockInventoryHolder blockInventoryHolder && lootTableConfig.contains(lootTable)) {
+      LootTableConfig.LootTableSettings settings = lootTableConfig.getSettings(lootTable);
+      if (event.getEntity() instanceof Player player) {
+        PdcUtil.map(player.getPersistentDataContainer(), getKey("loot_penalty"), PersistentDataType.TAG_CONTAINER,
+          player.getPersistentDataContainer().getAdapterContext().newPersistentDataContainer(),
+          pdc -> {
+            PdcUtil.map(pdc, event.getLootTable().getKey(), LootPenalty.LOOT_PENALTY, new LootPenalty(),
+              lp -> {
+                if (!lp.update(settings::getCount)) {
+                  player.sendMessage(Component.text(settings.failInfo.replace("%count%", String.valueOf(lp.count))
+                    .replace("%level%", String.valueOf(lp.level))
+                    .replace("%loot_table%", lootTable), NamedTextColor.RED));
+                  teleport(blockInventoryHolder.getBlock(), settings.range);
+                  event.setCancelled(true);
+                } else {
+                  player.sendMessage(Component.text(settings.successInfo.replace("%count%", String.valueOf(lp.count))
+                    .replace("%level%", String.valueOf(lp.level))
+                    .replace("%loot_table%", lootTable), NamedTextColor.GREEN));
+                  event.setCancelled(false);
+                }
+                return lp;
+              });
+            return pdc;
+          });
+      } else {
+        teleport(blockInventoryHolder.getBlock(), settings.range);
+        event.setCancelled(true);
+      }
+    }
   }
 
-  private void teleport(CraftWorld cw, Location loc, int range) {
+  private void teleport(Block block, int range) {
+    Location loc = block.getLocation();
+    CraftWorld cw = (CraftWorld) loc.getWorld();
     Level world = cw.getHandle();
     BlockPos pos = getPos(loc);
     WorldBorder worldborder = world.getWorldBorder();
@@ -148,9 +192,7 @@ public final class Smp2Tools extends JavaPlugin implements Listener {
         execute("clone %d %d %d %d %d %d %d %d %d", pos.getX(), pos.getY(), pos.getZ(),
           pos.getX(), pos.getY(), pos.getZ(),
           to.getX(), to.getY(), to.getZ());
-        execute("data remove block %d %d %d LootTableSeed", pos.getX(), pos.getY(), pos.getZ());
-        execute("data modify block %d %d %d LootTable set value %s", pos.getX(), pos.getY(), pos.getZ(), "\"\"");
-        execute("setblock %d %d %d air", pos.getX(), pos.getY(), pos.getZ());
+        cw.getBlockAt(loc).setType(Material.AIR);
         for (int j = 0; j < 128; ++j) {
           double d0 = world.random.nextDouble();
           float f = (world.random.nextFloat() - 0.5F) * 0.2F;
