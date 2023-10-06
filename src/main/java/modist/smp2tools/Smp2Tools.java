@@ -135,7 +135,7 @@ public final class Smp2Tools extends JavaPlugin implements Listener {
                       .replace("%level%", String.valueOf(lp.level))
                       .replace("%loot_table%", lootTable.toString()), NamedTextColor.RED));
                   }
-                  teleport(blockInventoryHolder.getBlock(), settings.range, event.getLootTable().getKey().asString());
+                  teleport(blockInventoryHolder.getBlock(), settings.rangeMin, settings.rangeMax, event.getLootTable().getKey().asString());
                   event.setCancelled(true);
                 } else {
                   if(!settings.successInfo.isEmpty()) {
@@ -150,18 +150,21 @@ public final class Smp2Tools extends JavaPlugin implements Listener {
             return pdc;
           });
       } else {
-        teleport(blockInventoryHolder.getBlock(), settings.range, event.getLootTable().getKey().asString());
+        teleport(blockInventoryHolder.getBlock(), settings.rangeMin, settings.rangeMax, event.getLootTable().getKey().asString());
         event.setCancelled(true);
       }
     }
   }
 
-  private void teleport(Block block, int range, String lootTable) {
+  private void teleport(Block block, int rangeMin, int rangeMax, String lootTable) {
     Location from = block.getLocation();
     CraftWorld cw = (CraftWorld) from.getWorld();
     Level world = cw.getHandle();
     for (int i = 0; i < 1000; ++i) {
-      Location to = from.clone().add(world.random.nextInt(range) - world.random.nextInt(range), world.random.nextInt(range) - world.random.nextInt(range), world.random.nextInt(range) - world.random.nextInt(range));
+      int x = world.random.nextInt(rangeMin, rangeMax) * (world.random.nextBoolean() ? 1 : -1);
+      int y = world.random.nextInt(rangeMin, rangeMax) * (world.random.nextBoolean() ? 1 : -1);
+      int z = world.random.nextInt(rangeMin, rangeMax) * (world.random.nextBoolean() ? 1 : -1);
+      Location to = from.clone().add(x, y, z);
       if (cw.getBlockAt(to).getType().isAir() && cw.getWorldBorder().isInside(to)) {
         BlockEntity blockEntity = world.getBlockEntity(getPos(from));
         CompoundTag compoundTag = blockEntity.saveWithoutMetadata();

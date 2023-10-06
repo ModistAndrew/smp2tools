@@ -6,7 +6,7 @@ Advancement
 Loot Penalty
 
  - specify the name of the loot table to make loot penalty take effect, e.g. minecraft:chests/buried_treasure. use global to modify global settings. use namespace to modify all loot tables under it
- - range: the range of teleport
+ - rangeMin/rangeMax: the min/max range of teleport. rangeMax must be larger than rangeMin
  - function: a math expression to get the penalty count. use %level% to represent how many times the player has already opened a chest with the same loot
  - fail_info/success_info(optional): message sent to the player when they can/cannot open the chest. you can use %level%, %count% and %loot_table%
  - protection: whether to prevent the container from being broken, otherwise the container will be destroyed with nothing left!

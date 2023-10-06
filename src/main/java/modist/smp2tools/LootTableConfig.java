@@ -21,11 +21,16 @@ public class LootTableConfig {
     String path = getPath(namespace, key);
     if (path != null) {
       ConfigurationSection section = config.getConfigurationSection(path);
-      settings.range = section.getInt("range", global.range);
+      settings.rangeMin = section.getInt("rangeMin", global.rangeMin);
+      settings.rangeMax = section.getInt("rangeMax", global.rangeMax);
       settings.function = section.getString("function", global.function);
       settings.failInfo = section.getString("fail_info", global.failInfo);
       settings.successInfo = section.getString("success_info", global.successInfo);
       settings.protection = section.getBoolean("protection", global.protection);
+      if(settings.rangeMax <= settings.rangeMin) {
+        Smp2Tools.INSTANCE.getLogger().warning("rangeMax must be larger than rangeMin. Set to rangeMin + 1");
+        settings.rangeMax = settings.rangeMin + 1;
+      }
       return settings;
     }
     return null;
@@ -48,7 +53,8 @@ public class LootTableConfig {
   }
 
   public static class LootTableSettings {
-    public int range = 16;
+    public int rangeMin = 8;
+    public int rangeMax = 16;
     public String function = "%level";
     public String failInfo = "";
     public String successInfo = "";
